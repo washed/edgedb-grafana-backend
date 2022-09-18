@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "datasource",
+  "name": "EdgeDB",
+  "id": "washed-edgedbgb-datasource",
+  "metrics": true,
+  "backend": true,
+  "executable": "gpx_edgedb-grafana-backend",
+  "info": {
+    "description": "",
+    "author": {
+      "name": "Marc Freudenberg",
+      "url": "https://github.com/washed/edgedb-grafana-backend"
+    },
+    "keywords": [
+      "edgedb"
+    ],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [
+      {
+        "name": "Website",
+        "url": "https://github.com/washed/edgedb-grafana-backend"
+      },
+      {
+        "name": "License",
+        "url": "https://github.com/washed/edgedb-grafana-backend/blob/main/LICENSE"
+      }
+    ],
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "dependencies": {
+    "grafanaDependency": ">=7.0.0",
+    "plugins": []
+  }
+}
