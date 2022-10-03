@@ -3,10 +3,10 @@ import { defaults } from 'lodash';
 import React, { PureComponent } from 'react';
 import { TextArea } from '@grafana/ui';
 import { QueryEditorProps } from '@grafana/data';
-import { DataSource } from './datasource';
+import { EdgeDBDatasource } from './datasource';
 import { defaultQuery, EdgeDBDataSourceOptions, EdgeDBQuery } from './types';
 
-type Props = QueryEditorProps<DataSource, EdgeDBQuery, EdgeDBDataSourceOptions>;
+type Props = QueryEditorProps<EdgeDBDatasource, EdgeDBQuery, EdgeDBDataSourceOptions>;
 
 export class QueryEditor extends PureComponent<Props> {
   onQueryTextChange: React.FormEventHandler<HTMLTextAreaElement> = (event) => {
