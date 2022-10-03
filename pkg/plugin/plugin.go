@@ -100,6 +100,8 @@ func (d *EdgeDBDatasource) query(_ context.Context, pCtx backend.PluginContext, 
 	db, err := edgedb.CreateClientDSN(ctx, getDSN(pCtx), opts)
 	if err != nil {
 		log.DefaultLogger.Error(err.Error())
+		response.Error = err
+		return response
 	}
 	defer db.Close()
 
@@ -120,6 +122,8 @@ func (d *EdgeDBDatasource) query(_ context.Context, pCtx backend.PluginContext, 
 	err = db.QueryJSON(ctx, interpolatedQuery, &result)
 	if err != nil {
 		log.DefaultLogger.Error(err.Error())
+		response.Error = err
+		return response
 	}
 
 	log.DefaultLogger.Debug("Queried '%v', result: %v", interpolatedQuery, result)
@@ -128,10 +132,17 @@ func (d *EdgeDBDatasource) query(_ context.Context, pCtx backend.PluginContext, 
 
 	if err := json.Unmarshal(result, &queryResult); err != nil {
 		log.DefaultLogger.Error(err.Error())
+		response.Error = err
+		return response
 	}
 
 	// create data frame response.
 	frame := data.NewFrame("response")
+
+	if len(queryResult) == 0 {
+		// TODO: check if this is a correct empty response
+		return response
+	}
 
 	// add fields.
 	first_item := queryResult[0]
@@ -145,6 +156,8 @@ func (d *EdgeDBDatasource) query(_ context.Context, pCtx backend.PluginContext, 
 				t, err := time.Parse(time.RFC3339, v[key].(string))
 				if err != nil {
 					log.DefaultLogger.Error(err.Error())
+					response.Error = err
+					return response
 				}
 				column[i] = t
 			}
