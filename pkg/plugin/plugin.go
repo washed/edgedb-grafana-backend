@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"time"
@@ -142,7 +143,17 @@ func (d *EdgeDBDatasource) query(_ context.Context, pCtx backend.PluginContext, 
 
 	// add fields.
 	first_item := queryResult[0]
-	for key, element := range first_item {
+
+	// we want a stable iteration order, so we create
+	// a sorted slice of the keys here
+	keys := make([]string, 0, len(first_item))
+	for key := range first_item {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		element := first_item[key]
 		fieldType := reflect.TypeOf(element)
 		log.DefaultLogger.Debug("Adding field: ", key, "of type: ", fieldType)
 
