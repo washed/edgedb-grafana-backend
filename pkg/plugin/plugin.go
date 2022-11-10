@@ -112,21 +112,17 @@ func (d *EdgeDBDatasource) query(_ context.Context, pCtx backend.PluginContext, 
 	}
 	cleanedQuery := strings.Join(query_lines[:], "\n")
 
-	// interpolate $__from and $__to macros
-	interpolatedQuery := strings.Replace(cleanedQuery, "$__from", fmt.Sprintf("<datetime>'%v'", query.TimeRange.From.Format(time.RFC3339)), -1)
-	interpolatedQuery = strings.Replace(interpolatedQuery, "$__to", fmt.Sprintf("<datetime>'%v'", query.TimeRange.To.Format(time.RFC3339)), -1)
-
-	log.DefaultLogger.Debug("interpolatedQuery", "interpolatedQuery", interpolatedQuery)
+	log.DefaultLogger.Debug("cleanedQuery", "cleanedQuery", cleanedQuery)
 
 	var result []byte
-	err = db.QueryJSON(ctx, interpolatedQuery, &result)
+	err = db.QueryJSON(ctx, cleanedQuery, &result)
 	if err != nil {
 		log.DefaultLogger.Error(err.Error())
 		response.Error = err
 		return response
 	}
 
-	log.DefaultLogger.Debug("Queried '%v', result: %v", interpolatedQuery, result)
+	log.DefaultLogger.Debug("Queried '%v', result: %v", cleanedQuery, result)
 
 	var queryResult []map[string]interface{}
 
