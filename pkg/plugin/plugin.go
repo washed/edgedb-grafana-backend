@@ -34,19 +34,33 @@ var (
 )
 
 // NewEdgeDBDatasource creates a new datasource instance.
-func NewEdgeDBDatasource(_ backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	return &EdgeDBDatasource{}, nil
+func NewEdgeDBDatasource(dataSourceInstanceSettings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	opts := edgedb.Options{Concurrency: 4}
+	ctx := context.Background()
+	dsn := dataSourceInstanceSettings.DecryptedSecureJSONData["DSN"]
+
+	client, err := edgedb.CreateClientDSN(ctx, dsn, opts)
+	if err != nil {
+		log.DefaultLogger.Error(err.Error())
+		return nil, err
+	}
+
+	d := &EdgeDBDatasource{client: client}
+	return d, nil
 }
 
 // EdgeDBDatasource is an example datasource which can respond to data queries, reports
 // its health and has streaming skills.
-type EdgeDBDatasource struct{}
+type EdgeDBDatasource struct {
+	client *edgedb.Client
+}
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
 // created. As soon as datasource settings change detected by SDK old datasource instance will
 // be disposed and a new one will be created using NewEdgeDBDatasource factory function.
 func (d *EdgeDBDatasource) Dispose() {
 	// Clean up datasource instance resources.
+	d.client.Close()
 }
 
 // QueryData handles multiple queries and returns multiple responses.
@@ -94,16 +108,7 @@ func (d *EdgeDBDatasource) query(_ context.Context, pCtx backend.PluginContext, 
 		return response
 	}
 
-	opts := edgedb.Options{Concurrency: 4}
 	ctx := context.Background()
-
-	db, err := edgedb.CreateClientDSN(ctx, getDSN(pCtx), opts)
-	if err != nil {
-		log.DefaultLogger.Error(err.Error())
-		response.Error = err
-		return response
-	}
-	defer db.Close()
 
 	// cleanup trailing whitespace from query lines
 	query_lines := strings.Split(qm.QueryText, "\n")
@@ -115,7 +120,7 @@ func (d *EdgeDBDatasource) query(_ context.Context, pCtx backend.PluginContext, 
 	log.DefaultLogger.Debug("cleanedQuery", "cleanedQuery", cleanedQuery)
 
 	var result []byte
-	err = db.QueryJSON(ctx, cleanedQuery, &result)
+	err := d.client.QueryJSON(ctx, cleanedQuery, &result)
 	if err != nil {
 		log.DefaultLogger.Error(err.Error())
 		response.Error = err
@@ -188,21 +193,12 @@ func (d *EdgeDBDatasource) query(_ context.Context, pCtx backend.PluginContext, 
 	return response
 }
 
-func QueryHealthCheck(pCtx backend.PluginContext) (int64, bool) {
-	opts := edgedb.Options{Concurrency: 4}
+func (d *EdgeDBDatasource) QueryHealthCheck(pCtx backend.PluginContext) (int64, bool) {
 	ctx := context.Background()
-
-	dsn := getDSN(pCtx)
-
-	db, err := edgedb.CreateClientDSN(ctx, dsn, opts)
-	if err != nil {
-		log.DefaultLogger.Error(err.Error())
-	}
-	defer db.Close()
 
 	var result int64
 
-	err = db.QuerySingle(ctx, "select 2+2", &result)
+	err := d.client.QuerySingle(ctx, "select 2+2", &result)
 	if err != nil {
 		log.DefaultLogger.Error(err.Error())
 	}
@@ -218,7 +214,7 @@ func QueryHealthCheck(pCtx backend.PluginContext) (int64, bool) {
 func (d *EdgeDBDatasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	log.DefaultLogger.Info("CheckHealth called", "request", req)
 
-	value, result := QueryHealthCheck(req.PluginContext)
+	value, result := d.QueryHealthCheck(req.PluginContext)
 
 	var status backend.HealthStatus
 	var message string
