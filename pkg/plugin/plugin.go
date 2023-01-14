@@ -121,9 +121,19 @@ func (d *EdgeDBDatasource) query(
 
 	log.DefaultLogger.Debug("cleanedQuery", "cleanedQuery", cleanedQuery)
 
-	var queryResult []map[string]interface{}
-	err := d.client.Query(ctx, cleanedQuery, &queryResult)
+	var result []byte
+	err := d.client.QueryJSON(ctx, cleanedQuery, &result)
 	if err != nil {
+		log.DefaultLogger.Error(err.Error())
+		response.Error = err
+		return response
+	}
+
+	log.DefaultLogger.Debug("Queried '%v', result: %v", cleanedQuery, result)
+
+	var queryResult []map[string]interface{}
+
+	if err := json.Unmarshal(result, &queryResult); err != nil {
 		log.DefaultLogger.Error(err.Error())
 		response.Error = err
 		return response
