@@ -129,7 +129,7 @@ func (d *EdgeDBDatasource) query(
 		return response
 	}
 
-	log.DefaultLogger.Debug("Queried '%v', result: %v", cleanedQuery, result)
+	log.DefaultLogger.Debug("Query returned with results!", "cleanedQuery", cleanedQuery)
 
 	var queryResult []map[string]interface{}
 
