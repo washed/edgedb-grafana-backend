@@ -35,7 +35,9 @@ var (
 )
 
 // NewEdgeDBDatasource creates a new datasource instance.
-func NewEdgeDBDatasource(dataSourceInstanceSettings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+func NewEdgeDBDatasource(
+	dataSourceInstanceSettings backend.DataSourceInstanceSettings,
+) (instancemgmt.Instance, error) {
 	opts := edgedb.Options{Concurrency: 4}
 	ctx := context.Background()
 	dsn := dataSourceInstanceSettings.DecryptedSecureJSONData["DSN"]
@@ -68,7 +70,10 @@ func (d *EdgeDBDatasource) Dispose() {
 // req contains the queries []DataQuery (where each query contains RefID as a unique identifier).
 // The QueryDataResponse contains a map of RefID to the response for each query, and each response
 // contains Frames ([]*Frame).
-func (d *EdgeDBDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+func (d *EdgeDBDatasource) QueryData(
+	ctx context.Context,
+	req *backend.QueryDataRequest,
+) (*backend.QueryDataResponse, error) {
 	log.DefaultLogger.Info("QueryData called", "request", req)
 
 	// create response struct
@@ -94,13 +99,11 @@ type queryModel struct {
 	RefId         string `json:"refId"`
 }
 
-func getDSN(pCtx backend.PluginContext) string {
-	secureJSONData := pCtx.DataSourceInstanceSettings.DecryptedSecureJSONData
-	dsn := secureJSONData["DSN"]
-	return dsn
-}
-
-func (d *EdgeDBDatasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
+func (d *EdgeDBDatasource) query(
+	ctx context.Context,
+	pCtx backend.PluginContext,
+	query backend.DataQuery,
+) backend.DataResponse {
 	response := backend.DataResponse{}
 
 	var qm queryModel
@@ -108,8 +111,6 @@ func (d *EdgeDBDatasource) query(_ context.Context, pCtx backend.PluginContext, 
 	if response.Error != nil {
 		return response
 	}
-
-	ctx := context.Background()
 
 	// cleanup trailing whitespace from query lines
 	query_lines := strings.Split(qm.QueryText, "\n")
@@ -222,7 +223,10 @@ func (d *EdgeDBDatasource) QueryHealthCheck(pCtx backend.PluginContext) (int64, 
 // The main use case for these health checks is the test button on the
 // datasource configuration page which allows users to verify that
 // a datasource is working as expected.
-func (d *EdgeDBDatasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+func (d *EdgeDBDatasource) CheckHealth(
+	_ context.Context,
+	req *backend.CheckHealthRequest,
+) (*backend.CheckHealthResult, error) {
 	log.DefaultLogger.Info("CheckHealth called", "request", req)
 
 	value, result := d.QueryHealthCheck(req.PluginContext)
@@ -246,7 +250,10 @@ func (d *EdgeDBDatasource) CheckHealth(_ context.Context, req *backend.CheckHeal
 
 // SubscribeStream is called when a client wants to connect to a stream. This callback
 // allows sending the first message.
-func (d *EdgeDBDatasource) SubscribeStream(_ context.Context, req *backend.SubscribeStreamRequest) (*backend.SubscribeStreamResponse, error) {
+func (d *EdgeDBDatasource) SubscribeStream(
+	_ context.Context,
+	req *backend.SubscribeStreamRequest,
+) (*backend.SubscribeStreamResponse, error) {
 	log.DefaultLogger.Info("SubscribeStream called", "request", req)
 
 	status := backend.SubscribeStreamStatusPermissionDenied
@@ -261,7 +268,11 @@ func (d *EdgeDBDatasource) SubscribeStream(_ context.Context, req *backend.Subsc
 
 // RunStream is called once for any open channel.  Results are shared with everyone
 // subscribed to the same channel.
-func (d *EdgeDBDatasource) RunStream(ctx context.Context, req *backend.RunStreamRequest, sender *backend.StreamSender) error {
+func (d *EdgeDBDatasource) RunStream(
+	ctx context.Context,
+	req *backend.RunStreamRequest,
+	sender *backend.StreamSender,
+) error {
 	log.DefaultLogger.Info("RunStream called", "request", req)
 
 	// Create the same data frame as for query data.
@@ -298,7 +309,10 @@ func (d *EdgeDBDatasource) RunStream(ctx context.Context, req *backend.RunStream
 }
 
 // PublishStream is called when a client sends a message to the stream.
-func (d *EdgeDBDatasource) PublishStream(_ context.Context, req *backend.PublishStreamRequest) (*backend.PublishStreamResponse, error) {
+func (d *EdgeDBDatasource) PublishStream(
+	_ context.Context,
+	req *backend.PublishStreamRequest,
+) (*backend.PublishStreamResponse, error) {
 	log.DefaultLogger.Info("PublishStream called", "request", req)
 
 	// Do not allow publishing at all.
