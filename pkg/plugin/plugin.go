@@ -38,17 +38,17 @@ var (
 func NewEdgeDBDatasource(
 	dataSourceInstanceSettings backend.DataSourceInstanceSettings,
 ) (instancemgmt.Instance, error) {
-	opts := edgedb.Options{Concurrency: 4}
-	ctx := context.Background()
+	opts := edgedb.Options{}
 	dsn := dataSourceInstanceSettings.DecryptedSecureJSONData["DSN"]
 
-	client, err := edgedb.CreateClientDSN(ctx, dsn, opts)
+	client, err := edgedb.CreateClientDSN(nil, dsn, opts)
 	if err != nil {
-		log.DefaultLogger.Error(err.Error())
+		log.DefaultLogger.Error("Error connecting to database!", "err", err.Error())
 		return nil, err
 	}
 
 	d := &EdgeDBDatasource{client: client}
+	log.DefaultLogger.Info("Connected to database")
 	return d, nil
 }
 
@@ -63,7 +63,12 @@ type EdgeDBDatasource struct {
 // be disposed and a new one will be created using NewEdgeDBDatasource factory function.
 func (d *EdgeDBDatasource) Dispose() {
 	// Clean up datasource instance resources.
-	d.client.Close()
+	err := d.client.Close()
+	if err != nil {
+		log.DefaultLogger.Error("Error closing database connection", "err", err.Error())
+	} else {
+		log.DefaultLogger.Info("Database connection closed")
+	}
 }
 
 // QueryData handles multiple queries and returns multiple responses.
@@ -124,7 +129,7 @@ func (d *EdgeDBDatasource) query(
 	var result []byte
 	err := d.client.QueryJSON(ctx, cleanedQuery, &result)
 	if err != nil {
-		log.DefaultLogger.Error(err.Error())
+		log.DefaultLogger.Error("Error when querying database", "err", err.Error())
 		response.Error = err
 		return response
 	}
@@ -134,7 +139,7 @@ func (d *EdgeDBDatasource) query(
 	var queryResult []map[string]interface{}
 
 	if err := json.Unmarshal(result, &queryResult); err != nil {
-		log.DefaultLogger.Error(err.Error())
+		log.DefaultLogger.Error("Error unmarshalling database response", "err", err.Error())
 		response.Error = err
 		return response
 	}
