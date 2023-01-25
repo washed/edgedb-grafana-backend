@@ -210,7 +210,7 @@ func (d *EdgeDBDatasource) query(
 	return response
 }
 
-func (d *EdgeDBDatasource) QueryHealthCheck(pCtx backend.PluginContext) (int64, bool) {
+func (d *EdgeDBDatasource) QueryHealthCheck(pCtx backend.PluginContext) (int64, bool, error) {
 	ctx := context.Background()
 
 	var result int64
@@ -218,10 +218,11 @@ func (d *EdgeDBDatasource) QueryHealthCheck(pCtx backend.PluginContext) (int64, 
 	err := d.client.QuerySingle(ctx, "select 2+2", &result)
 	if err != nil {
 		log.DefaultLogger.Error(err.Error())
+		return result, false, err
 	}
 	log.DefaultLogger.Info("Queried 'select 2+2', result: ", result)
 
-	return result, result == 4
+	return result, result == 4, nil
 }
 
 // CheckHealth handles health checks sent from Grafana to the plugin.
@@ -234,17 +235,17 @@ func (d *EdgeDBDatasource) CheckHealth(
 ) (*backend.CheckHealthResult, error) {
 	log.DefaultLogger.Info("CheckHealth called", "request", req)
 
-	value, result := d.QueryHealthCheck(req.PluginContext)
+	value, result, err := d.QueryHealthCheck(req.PluginContext)
 
 	var status backend.HealthStatus
 	var message string
 
-	if result == true {
+	if result {
 		status = backend.HealthStatusOk
 		message = fmt.Sprintf("Data source is working: `select 2+2;` == `%v`", value)
 	} else {
 		status = backend.HealthStatusError
-		message = fmt.Sprintf("Data source is in error: `select 2+2;` == `%v`", value)
+		message = fmt.Sprintf("Data source is in error: `%s`", err)
 	}
 
 	return &backend.CheckHealthResult{
