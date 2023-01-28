@@ -30,7 +30,6 @@ import (
 var (
 	_ backend.QueryDataHandler      = (*EdgeDBDatasource)(nil)
 	_ backend.CheckHealthHandler    = (*EdgeDBDatasource)(nil)
-	_ backend.StreamHandler         = (*EdgeDBDatasource)(nil)
 	_ instancemgmt.InstanceDisposer = (*EdgeDBDatasource)(nil)
 )
 
@@ -251,78 +250,5 @@ func (d *EdgeDBDatasource) CheckHealth(
 	return &backend.CheckHealthResult{
 		Status:  status,
 		Message: message,
-	}, nil
-}
-
-// SubscribeStream is called when a client wants to connect to a stream. This callback
-// allows sending the first message.
-func (d *EdgeDBDatasource) SubscribeStream(
-	_ context.Context,
-	req *backend.SubscribeStreamRequest,
-) (*backend.SubscribeStreamResponse, error) {
-	log.DefaultLogger.Info("SubscribeStream called", "request", req)
-
-	status := backend.SubscribeStreamStatusPermissionDenied
-	if req.Path == "stream" {
-		// Allow subscribing only on expected path.
-		status = backend.SubscribeStreamStatusOK
-	}
-	return &backend.SubscribeStreamResponse{
-		Status: status,
-	}, nil
-}
-
-// RunStream is called once for any open channel.  Results are shared with everyone
-// subscribed to the same channel.
-func (d *EdgeDBDatasource) RunStream(
-	ctx context.Context,
-	req *backend.RunStreamRequest,
-	sender *backend.StreamSender,
-) error {
-	log.DefaultLogger.Info("RunStream called", "request", req)
-
-	// Create the same data frame as for query data.
-	frame := data.NewFrame("response")
-
-	// Add fields (matching the same schema used in QueryData).
-	frame.Fields = append(frame.Fields,
-		data.NewField("time", nil, make([]time.Time, 1)),
-		data.NewField("values", nil, make([]int64, 1)),
-	)
-
-	counter := 0
-
-	// Stream data frames periodically till stream closed by Grafana.
-	for {
-		select {
-		case <-ctx.Done():
-			log.DefaultLogger.Info("Context done, finish streaming", "path", req.Path)
-			return nil
-		case <-time.After(time.Second):
-			// Send new data periodically.
-			frame.Fields[0].Set(0, time.Now())
-			frame.Fields[1].Set(0, int64(10*(counter%2+1)))
-
-			counter++
-
-			err := sender.SendFrame(frame, data.IncludeAll)
-			if err != nil {
-				log.DefaultLogger.Error("Error sending frame", "error", err)
-				continue
-			}
-		}
-	}
-}
-
-// PublishStream is called when a client sends a message to the stream.
-func (d *EdgeDBDatasource) PublishStream(
-	_ context.Context,
-	req *backend.PublishStreamRequest,
-) (*backend.PublishStreamResponse, error) {
-	log.DefaultLogger.Info("PublishStream called", "request", req)
-
-	// Do not allow publishing at all.
-	return &backend.PublishStreamResponse{
-		Status: backend.PublishStreamStatusPermissionDenied,
 	}, nil
 }
