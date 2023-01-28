@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := build
-.PHONY: build install backend frontend package
+.PHONY: build install backend frontend package patch minor major
 
 FULL_IMAGE_TAG := $(shell git describe --tags --always)
 
@@ -21,3 +21,12 @@ package:
 	mv dist/ washed-edgedbgb-datasource
 	zip washed-edgedbgb-datasource-$(FULL_IMAGE_TAG).zip washed-edgedbgb-datasource -r
 	mv washed-edgedbgb-datasource/ dist
+
+patch:
+	npm version patch
+
+minor:
+	npm version minor
+
+major:
+	npm version major
