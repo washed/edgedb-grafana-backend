@@ -1,6 +1,6 @@
 {
   "name": "washed-edgedbgb-datasource",
-  "version": "1.0.1",
+  "version": "0.0.0",
   "description": "",
   "scripts": {
     "build": "grafana-toolkit plugin:build",
