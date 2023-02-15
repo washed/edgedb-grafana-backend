@@ -3,7 +3,7 @@ module github.com/grafana/grafana-starter-datasource-backend
 go 1.18
 
 require (
-	github.com/edgedb/edgedb-go v0.13.4
+	github.com/edgedb/edgedb-go v0.13.5
 	github.com/grafana/grafana-plugin-sdk-go v0.147.0
 )
 
