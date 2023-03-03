@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"time"
@@ -33,14 +34,50 @@ var (
 	_ instancemgmt.InstanceDisposer = (*EdgeDBDatasource)(nil)
 )
 
+type DataSourceConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Database string
+	TlsMode  string
+}
+
 // NewEdgeDBDatasource creates a new datasource instance.
 func NewEdgeDBDatasource(
 	dataSourceInstanceSettings backend.DataSourceInstanceSettings,
 ) (instancemgmt.Instance, error) {
 	opts := edgedb.Options{}
-	dsn := dataSourceInstanceSettings.DecryptedSecureJSONData["DSN"]
 
-	client, err := edgedb.CreateClientDSN(nil, dsn, opts)
+	dsConfig := DataSourceConfig{}
+	err := json.Unmarshal(dataSourceInstanceSettings.JSONData, &dsConfig)
+	if err != nil {
+		log.DefaultLogger.Error("Error unmarshalling datasource options!", "err", err.Error())
+		return nil, err
+	}
+
+	opts.Host = dsConfig.Host
+	port, err := strconv.ParseInt(dsConfig.Port, 10, 32)
+	if err != nil {
+		log.DefaultLogger.Error("Error parsing port as integer!", "err", err.Error())
+		return nil, err
+	}
+
+	opts.Port = int(port)
+	opts.User = dsConfig.User
+	opts.Password.Set(dataSourceInstanceSettings.DecryptedSecureJSONData["password"])
+
+	opts.Database = dsConfig.Database
+
+	switch dsConfig.TlsMode {
+	case "insecure":
+		opts.TLSOptions.SecurityMode = edgedb.TLSModeInsecure
+	case "strict":
+		opts.TLSOptions.SecurityMode = edgedb.TLSModeStrict
+	case "no_host_verification":
+		opts.TLSOptions.SecurityMode = edgedb.TLSModeNoHostVerification
+	}
+
+	client, err := edgedb.CreateClient(nil, opts)
 	if err != nil {
 		log.DefaultLogger.Error("Error connecting to database!", "err", err.Error())
 		return nil, err

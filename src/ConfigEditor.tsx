@@ -1,62 +1,112 @@
-import React, { ChangeEvent, PureComponent } from 'react';
-import { LegacyForms } from '@grafana/ui';
-import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-import { EdgeDBDataSourceOptions, EdgeDBSecureJsonData } from './types';
+import React, { PureComponent, SyntheticEvent } from 'react';
+import { FieldSet, InlineField, Input, Select, SecretInput } from '@grafana/ui';
+import {
+  DataSourcePluginOptionsEditorProps,
+  SelectableValue,
+  updateDatasourcePluginJsonDataOption,
+  onUpdateDatasourceJsonDataOption,
+  onUpdateDatasourceSecureJsonDataOption,
+  updateDatasourcePluginResetOption,
+} from '@grafana/data';
+import { EdgeDBDataSourceOptions, EdgeDBTLSModes } from './types';
 
-const { SecretFormField } = LegacyForms;
+interface Props extends DataSourcePluginOptionsEditorProps<EdgeDBDataSourceOptions> {}
 
-interface Props extends DataSourcePluginOptionsEditorProps<EdgeDBDataSourceOptions> { }
-
-interface State { }
+interface State {}
 
 export class ConfigEditor extends PureComponent<Props, State> {
-  onDSNChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { onOptionsChange, options } = this.props;
-    onOptionsChange({
-      ...options,
-      secureJsonData: {
-        DSN: event.target.value,
-      },
-    });
+  onResetPassword = () => {
+    updateDatasourcePluginResetOption(this.props, 'password');
   };
 
-  onResetDSN = () => {
+  onDSOptionChanged = (property: keyof EdgeDBDataSourceOptions) => {
+    console.log('ds changed');
     const { onOptionsChange, options } = this.props;
-    onOptionsChange({
-      ...options,
-      secureJsonFields: {
-        ...options.secureJsonFields,
-        DSN: false,
-      },
-      secureJsonData: {
-        ...options.secureJsonData,
-        DSN: '',
-      },
-    });
+    return (event: SyntheticEvent<HTMLInputElement>) => {
+      onOptionsChange({ ...options, ...{ [property]: event.currentTarget.value } });
+    };
   };
+
+  onJSONDataOptionSelected = (property: keyof EdgeDBDataSourceOptions) => {
+    return (value: SelectableValue) => {
+      updateDatasourcePluginJsonDataOption(this.props, property, value.value);
+    };
+  };
+
+  tlsModes: Array<SelectableValue<EdgeDBTLSModes>> = [
+    { value: EdgeDBTLSModes.strict, label: 'strict' },
+    { value: EdgeDBTLSModes.no_host_verification, label: 'no_host_verification' },
+    { value: EdgeDBTLSModes.insecure, label: 'insecure' },
+  ];
 
   render() {
     const { options } = this.props;
     const { secureJsonFields } = options;
-    const secureJsonData = (options.secureJsonData || {}) as EdgeDBSecureJsonData;
+    const jsonData = (options.jsonData || {}) as EdgeDBDataSourceOptions;
+
+    const labelWidthConnection = 20;
 
     return (
-      <div className="gf-form-group">
-        <div className="gf-form-inline">
-          <div className="gf-form">
-            <SecretFormField
-              isConfigured={(secureJsonFields && secureJsonFields.DSN) as boolean}
-              value={secureJsonData.DSN || ''}
-              label="DSN"
-              placeholder="edgedb://USERNAME:PASSWORD@HOSTNAME:PORT/DATABASE"
-              labelWidth={6}
-              inputWidth={20}
-              onReset={this.onResetDSN}
-              onChange={this.onDSNChange}
-            />
-          </div>
-        </div>
-      </div>
+      <>
+        <FieldSet label="EdgeDB Connection" width={400}>
+          <InlineField labelWidth={labelWidthConnection} label="Host">
+            <Input
+              width={40}
+              name="host"
+              type="text"
+              value={jsonData.host || ''}
+              placeholder="localhost"
+              onChange={onUpdateDatasourceJsonDataOption(this.props, 'host')}
+            ></Input>
+          </InlineField>
+          <InlineField labelWidth={labelWidthConnection} label="Port">
+            <Input
+              width={40}
+              name="port"
+              type="text"
+              value={jsonData.port || ''}
+              placeholder="5656"
+              onChange={onUpdateDatasourceJsonDataOption(this.props, 'port')}
+            ></Input>
+          </InlineField>
+          <InlineField labelWidth={labelWidthConnection} label="User">
+            <Input
+              width={40}
+              name="user"
+              type="text"
+              value={jsonData.user || ''}
+              placeholder="edgedb"
+              onChange={onUpdateDatasourceJsonDataOption(this.props, 'user')}
+            ></Input>
+          </InlineField>
+          <InlineField labelWidth={labelWidthConnection} label="Password">
+            <SecretInput
+              width={40}
+              isConfigured={secureJsonFields?.password}
+              onReset={this.onResetPassword}
+              onBlur={onUpdateDatasourceSecureJsonDataOption(this.props, 'password')}
+            ></SecretInput>
+          </InlineField>
+          <InlineField labelWidth={labelWidthConnection} label="Database">
+            <Input
+              width={40}
+              name="database"
+              type="text"
+              value={jsonData.database || ''}
+              placeholder="edgedb"
+              onChange={onUpdateDatasourceJsonDataOption(this.props, 'database')}
+            ></Input>
+          </InlineField>
+          <InlineField labelWidth={labelWidthConnection} label="TLS Security">
+            <Select
+              options={this.tlsModes}
+              inputId="tlsMode"
+              value={jsonData.tlsMode || EdgeDBTLSModes.strict}
+              onChange={this.onJSONDataOptionSelected('tlsMode')}
+            ></Select>
+          </InlineField>
+        </FieldSet>
+      </>
     );
   }
 }
