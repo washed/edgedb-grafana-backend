@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -84,7 +83,7 @@ func NewEdgeDBDatasource(
 	}
 
 	d := &EdgeDBDatasource{client: client}
-	log.DefaultLogger.Info("Connected to database")
+	log.DefaultLogger.Debug("Connected to database")
 	return d, nil
 }
 
@@ -103,7 +102,7 @@ func (d *EdgeDBDatasource) Dispose() {
 	if err != nil {
 		log.DefaultLogger.Error("Error closing database connection", "err", err.Error())
 	} else {
-		log.DefaultLogger.Info("Database connection closed")
+		log.DefaultLogger.Debug("Database connection closed")
 	}
 }
 
@@ -115,8 +114,6 @@ func (d *EdgeDBDatasource) QueryData(
 	ctx context.Context,
 	req *backend.QueryDataRequest,
 ) (*backend.QueryDataResponse, error) {
-	log.DefaultLogger.Info("QueryData called", "request", req)
-
 	// create response struct
 	response := backend.NewQueryDataResponse()
 
@@ -160,8 +157,6 @@ func (d *EdgeDBDatasource) query(
 	}
 	cleanedQuery := strings.Join(query_lines[:], "\n")
 
-	log.DefaultLogger.Debug("cleanedQuery", "cleanedQuery", cleanedQuery)
-
 	var result []byte
 	err := d.client.QueryJSON(ctx, cleanedQuery, &result)
 	if err != nil {
@@ -169,8 +164,6 @@ func (d *EdgeDBDatasource) query(
 		response.Error = err
 		return response
 	}
-
-	log.DefaultLogger.Debug("Query returned with results!", "cleanedQuery", cleanedQuery)
 
 	var queryResult []map[string]interface{}
 
@@ -201,8 +194,6 @@ func (d *EdgeDBDatasource) query(
 
 	for _, key := range keys {
 		element := first_item[key]
-		fieldType := reflect.TypeOf(element)
-		log.DefaultLogger.Debug("Adding field: ", key, "of type: ", fieldType)
 
 		if key == "time" {
 			column := make([]time.Time, len(queryResult))
@@ -256,7 +247,6 @@ func (d *EdgeDBDatasource) QueryHealthCheck(pCtx backend.PluginContext) (int64, 
 		log.DefaultLogger.Error(err.Error())
 		return result, false, err
 	}
-	log.DefaultLogger.Info("Queried 'select 2+2', result: ", result)
 
 	return result, result == 4, nil
 }
@@ -269,8 +259,6 @@ func (d *EdgeDBDatasource) CheckHealth(
 	_ context.Context,
 	req *backend.CheckHealthRequest,
 ) (*backend.CheckHealthResult, error) {
-	log.DefaultLogger.Info("CheckHealth called", "request", req)
-
 	value, result, err := d.QueryHealthCheck(req.PluginContext)
 
 	var status backend.HealthStatus
