@@ -1,0 +1,41 @@
+version: "3"
+
+volumes:
+  edgedb-data:
+  grafana-data:
+
+services:
+  grafana:
+    image: grafana/grafana:9.3.6
+    ports:
+      - 3000:3000
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: 1
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: washed-edgedb-datasource
+      GF_PATHS_PLUGINS: /etc/grafana/plugins
+    volumes:
+      - type: bind
+        source: ./grafana/plugins/
+        target: /etc/grafana/plugins/
+        read_only: true
+      - grafana-data:/var/lib/grafana
+
+  edgedb:
+    hostname: edgedb
+    image: edgedb/edgedb:2.12
+    environment:
+      EDGEDB_SERVER_USER: edgedb
+      EDGEDB_SERVER_PASSWORD: secret
+      EDGEDB_SERVER_SECURITY: insecure_dev_mode
+      EDGEDB_SERVER_ADMIN_UI: enabled
+    volumes:
+      - ./edgedb/dbschema/:/dbschema/
+      - edgedb-data:/var/lib/edgedb/data
+    ports:
+      - "5656:5656"
+
+  data-producer:
+    build:
+      context: data-producer
+    restart: always

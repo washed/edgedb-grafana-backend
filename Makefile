@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := build
-.PHONY: build install backend frontend package patch minor major
+.PHONY: build install backend frontend package patch minor major playground playground-update playground-copy
 
 FULL_IMAGE_TAG := $(shell git describe --tags --always)
 
@@ -30,3 +30,14 @@ minor:
 
 major:
 	npm version major
+
+playground: playground-copy
+	docker-compose -f playground/docker-compose.yaml up --build --remove-orphans
+
+playground-update: build
+	docker-compose -f playground/docker-compose.yaml stop grafana
+	make playground-copy
+	docker-compose -f playground/docker-compose.yaml start grafana
+
+playground-copy:
+	cp -r dist/ playground/grafana/plugins/washed-edgedb-datasource/
