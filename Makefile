@@ -18,9 +18,9 @@ frontend:
 
 package:
 	export FULL_IMAGE_TAG=$(git describe --tags --always)
-	mv dist/ washed-edgedbgb-datasource
-	zip washed-edgedbgb-datasource-$(FULL_IMAGE_TAG).zip washed-edgedbgb-datasource -r
-	mv washed-edgedbgb-datasource/ dist
+	mv dist/ washed-edgedb-datasource
+	zip washed-edgedb-datasource-$(FULL_IMAGE_TAG).zip washed-edgedb-datasource -r
+	mv washed-edgedb-datasource/ dist
 
 patch:
 	npm version patch

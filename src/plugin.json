@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
   "name": "EdgeDB",
-  "id": "washed-edgedbgb-datasource",
+  "id": "washed-edgedb-datasource",
   "metrics": true,
   "backend": true,
   "executable": "gpx_edgedb-grafana-backend",

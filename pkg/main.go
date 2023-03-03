@@ -17,7 +17,7 @@ func main() {
 	// from Grafana to create different instances of EdgeDBDatasource (per datasource
 	// ID). When datasource configuration changed Dispose method will be called and
 	// new datasource instance created using NewEdgeDBDatasource factory.
-	if err := datasource.Manage("washed-edgedbgb-datasource", plugin.NewEdgeDBDatasource, datasource.ManageOpts{}); err != nil {
+	if err := datasource.Manage("washed-edgedb-datasource", plugin.NewEdgeDBDatasource, datasource.ManageOpts{}); err != nil {
 		log.DefaultLogger.Error(err.Error())
 		os.Exit(1)
 	}
