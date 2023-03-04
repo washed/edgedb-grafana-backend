@@ -3,7 +3,7 @@
   "type": "datasource",
   "name": "EdgeDB",
   "id": "washed-edgedb-datasource",
-  "metrics": false,
+  "metrics": true,
   "backend": true,
   "alerting": true,
   "executable": "gpx_edgedb-grafana-backend",
